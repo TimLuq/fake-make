@@ -86,7 +86,7 @@ function make_target {
     if [[ "$lm" != "" ]]; then
 	echo "--- targeting dependencies: $lm"
         for cvar in $lm; do
-	    make_target "$1" "$cvar" "$2"
+	    make_target "$1" "$cvar" "$3"
 	done
     fi
 
@@ -103,7 +103,7 @@ function make_target {
     fi
     #echo "$lvar"
     echo '#!/bin/bash' > "$3.target"
-    tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#]+' | grep -o '[^'$'\t''].*' | xargs printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' >> "$3.target"
+    tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#]+' | grep -o '[^'$'\t''].*' | xargs -I '{}' printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' '{}' >> "$3.target"
     lvar="$(pwd)"
     make_run "$3.target"
     cd "$lvar"
