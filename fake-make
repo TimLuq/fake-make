@@ -30,7 +30,7 @@ function make {
     ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum | cut -d ' ' -f 1).$$"
     grep -v "^[A-Z]+=" "$lmakefile" > "$ltmp"
     lout="$(grep "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/')"
-    if [[ "$ltmp" != "" ]]; then
+    if [[ "$lout" != "" ]]; then
 	printf "%s" "$lout" | xargs -t -I '{}' sed -i '{}' "$ltmp"
     fi
     sed -i 's/$(MAKE)/make/' "$ltmp"
