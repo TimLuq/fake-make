@@ -63,7 +63,7 @@ function make {
 }
 
 function make_target {
-    local lm="$(grep "^$2=" "$3")"
+    local lm="$(grep "^$2=" "$3" | tail -n 1)"
     local lvar
     lm="${lm#*=}"
     if [[ "$lm" != "" ]]; then
@@ -88,6 +88,7 @@ function make_target {
 	esac
         return "$lm"
     fi
+    echo "--- running target '$2'"
 
 
     lm="$(grep "^$2:" "$1" | tail -n 1)"
@@ -96,12 +97,13 @@ function make_target {
 	echo "!!! Target '$2' could not be found."
 	return 2
     fi
+    echo "$2=circular" >> "$3"
 
     lm="${lm#*:}"
     lm="${lm# }"
     lm="${lm# }"
     if [[ "$lm" != "" ]]; then
-	echo "--- targeting dependencies: $lm"
+	echo "--- targeting dependencies: '$lm'"
         for cvar in $lm; do
 	    make_target "$1" "$cvar" "$3"
 	done
@@ -116,6 +118,7 @@ function make_target {
     fi
     lvar=$(($lvar - $lm - 1))
     if [[ "$lvar" == 0 ]]; then
+	echo "$2=0" >> "$3"
 	return 0
     fi
     #echo "$lvar"
@@ -130,9 +133,12 @@ function make_target {
 	cd "$lvar"
 	if [[ "$retval" != 0 ]]; then
 	    echo "!!! Target '$2' failed."
+	    echo "$2=$retval" >> "$3"
 	    return "$retval"
 	fi
     fi
+    echo "$2=0" >> "$3"
+    return 0
 }
 
 function make_run {
