@@ -12,7 +12,7 @@ function make {
     while (( "$#" )); do
 	if [[ "$1" == "-C" ]]; then
 	    shift
-	    ldir="${1:%/}/"
+	    ldir="${1%/}/"
 	    shift
 	else
 	    ltargets="$ltargets $1"
@@ -27,7 +27,7 @@ function make {
         echo "!!! Makefile not found in '$defdir'"
         return 1
     fi
-    ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum).$$"
+    ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum | cut -d ' ' -f 1).$$"
     grep -v "^[A-Z]+=" "$lmakefile" > "$ltmp"
     grep "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/' | xargs -t -I '{}' sed -i '{}' "$ltmp"
     sed -i 's/$(MAKE)/make/' "$ltmp"
@@ -80,8 +80,9 @@ function make_target {
 	return 2
     fi
 
-    lm="${lm:#*:}"
-    lm="${lm:## }"
+    lm="${lm#*:}"
+    lm="${lm# }"
+    lm="${lm# }"
     if [[ "$lm" != "" ]]; then
 	echo "--- targeting dependencies: $lm"
         for cvar in $lm; do
