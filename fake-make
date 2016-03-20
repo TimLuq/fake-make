@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# inherited vars not supported
+function make {
+    local ltargets=""
+    local lvar
+    local ldir="./"
+    local lmakefile
+    local ltmp
+    local lout
+    local lcwd="$(pwd)"
+    while (( "$#" )); do
+	if [[ "$1" == "-C" ]]; then
+	    shift
+	    ldir="${1:%/}/"
+	    shift
+	else
+	    ltargets="$ltargets $1"
+	    shift
+	fi
+    done
+    if [[ "$ltargets" == "" ]]; then
+	ltargets="all"
+    fi
+    lmakefile="$ldir"makefile
+    if [[ ! -f "$lmakefile" ]]; then
+        echo "!!! Makefile not found in '$defdir'"
+        return 1
+    fi
+    ltmp="$(tempnam).fm.$$"
+    grep -v -P "^[A-Z]+=" "$lmakefile" > "$ltmp"
+    grep -P "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/' | xargs -t -I '{}' sed -i '{}' "$ltmp"
+    sed -i 's/$(MAKE)/make'
+    lout="$(tempnam).fm.$$"
+
+    for cvar in $ltargets; do
+        lvar="$cvar"
+        cd "$ldir"
+        make_target "$ltmp" "$lvar" "$lout"
+        exitcode="$?"
+        cd "$lcwd"
+        if [[ "$exitcode" != 0 ]]; then
+            return "$exitcode"
+        fi
+    done
+}
+
+function make_target {
+    local lm="$(grep -P "^$2=" "$3")"
+    local lvar
+    lm="${lm#*=}"
+    if [[ "$lm" != "" ]]; then
+	if [[ "$lm" == "0" ]]; then
+	    echo "--- Target '$2' has already been comleted."
+	else
+	    echo "!!! Target '$2' has already failed."
+	fi
+	case $lm in
+	    circular)
+		echo "!!! Target '$2' is part of circular dependencies."
+		lm=3
+		;;
+	    notfound)
+		lm=2
+		;;
+	    [1-9]*)
+		;;
+	    *)
+		lm=4
+		;;
+	esac
+        return "$lm"
+    fi
+
+
+    lm="$(grep "^$2:" "$1" | tail -n 1)"
+    if [[ "$lm" == "" ]]; then
+	echo "$2=notfound" >> "$3"
+	echo "!!! Target '$2' could not be found."
+	return 2
+    fi
+
+    lm="${lm:#*:}"
+    lm="${lm:## }"
+    if [[ "$lm" != "" ]]; then
+	echo "--- targeting dependencies: $lm"
+        for cvar in $lm; do
+	    make_target "$1" "$cvar" "$3"
+	done
+    fi
+
+    lm="$(grep -n "^$2" "$1" | tail -n 1 | cut -d : -f 1)"
+    lvar="$(tail -n "+$lm" "$1" | grep -P '^[^\s].*:' | tail -n 1)"
+    if [[ "$lvar" == "" ]]; then
+	lvar="$(wc -l "$1")"
+    else
+	lvar="$(grep -n "^$lvar" "$1" | head -n 1 | cut -d : -f 1)"
+    fi
+    lvar=$(($lvar - $lm - 1))
+    if [[ "$lvar" == 0 ]]; then
+	return 0
+    fi
+    #echo "$lvar"
+    echo '#!/bin/bash' > "$3.target"
+    echo "# target=$2" >> "$3.target"
+    lvar="$(pwd)"
+    tail -n "+$lm" "$1" | head -n "$lvar" | grep -P -o '^\s+([^#]+)' | grep -P -o '[^\s].*' | xargs printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' >> "$3.target"
+    make_run "$3.target"
+    cd "$lvar"
+}
+
+function make_run {
+    . "$1"
+    return 0
+}
+
+make "$@"
