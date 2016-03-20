@@ -31,7 +31,7 @@ function make {
     grep -v "^[A-Z]+=" "$lmakefile" > "$ltmp"
     lout="$(grep "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/')"
     if [[ "$ltmp" != "" ]]; then
-	printf "%" "$lout" | xargs -t -I '{}' sed -i '{}' "$ltmp"
+	printf "%s" "$lout" | xargs -t -I '{}' sed -i '{}' "$ltmp"
     fi
     sed -i 's/$(MAKE)/make/' "$ltmp"
     lout="$ltmp.prgrs"
