@@ -29,9 +29,12 @@ function make {
     fi
     ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum | cut -d ' ' -f 1).$$"
     grep -v "^[A-Z]+=" "$lmakefile" > "$ltmp"
-    lout="$(grep "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/')"
+    lout="$(grep "^[A-Z]+=" "$lmakefile" | tac)"
     if [[ "$lout" != "" ]]; then
-	printf "%s" "$lout" | xargs -t -I '{}' sed -i '{}' "$ltmp"
+	lout="$(sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/')"
+	if [[ "$lout" != "" ]]; then
+	    printf "%s" "$lout" | xargs -t -I '{}' sed -i '{}' "$ltmp"
+	fi
     fi
     sed -i 's/$(MAKE)/make/' "$ltmp"
     lout="$ltmp.prgrs"
@@ -116,10 +119,10 @@ function make_target {
 	return 0
     fi
     #echo "$lvar"
-    echo '#!/bin/bash' > "$3.target"
     lvar="$(tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#]+' | grep -o '[^'$'\t''].*')"
     if [[ "$lvar" != "" ]]; then
 	printf "%s" "$lvar" > "$3.targeted"
+	echo  '#!/bin/bash' > "$3.target"
 	printf "%s" "$lvar" | xargs -I '{}' printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' '{}' >> "$3.target"
 	lvar="$(pwd)"
 	make_run "$3.target"
