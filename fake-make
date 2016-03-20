@@ -35,6 +35,7 @@ function make {
     fi
     sed -i 's/$(MAKE)/make/' "$ltmp"
     lout="$ltmp.prgrs"
+    touch "$lout"
 
     for cvar in $ltargets; do
         lvar="$cvar"
