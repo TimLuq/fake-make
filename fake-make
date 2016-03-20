@@ -113,6 +113,7 @@ function make_target {
     lvar="$(tail -n "+$lm" "$1" | grep '^[^'$'\t''].*:' | tail -n 1)"
     if [[ "$lvar" == "" ]]; then
 	lvar="$(wc -l "$1")"
+	lvar=$(($lvar + 2)) # eol + 1
     else
 	lvar="$(grep -n "^$lvar" "$1" | head -n 1 | cut -d : -f 1)"
     fi
