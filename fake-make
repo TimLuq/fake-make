@@ -110,15 +110,16 @@ function make_target {
     fi
 
     lm="$(grep -n "^$2" "$1" | tail -n 1 | cut -d : -f 1)"
-    lvar="$(tail -n "+$lm" "$1" | grep '^[^'$'\t''].*:' | tail -n 1)"
+    lm=$(($lm + 1))
+    lvar="$(tail -n "+$lm" "$1" | grep '^[^'$'\t''].*:' | head -n 1)"
     if [[ "$lvar" == "" ]]; then
 	lvar="$(wc -l "$1")"
-	lvar=$(($lvar + 2)) # eol + 1
+	lvar=$(($lvar + 1)) # eol + 1
     else
 	lvar="$(grep -n "^$lvar" "$1" | head -n 1 | cut -d : -f 1)"
     fi
     lvar=$(($lvar - $lm - 1))
-    echo "--- target '$2' (line $lm) consists of $lvar action lines"
+    echo "--- target '$2' (line $(($lm - 1)) ) consists of $lvar action lines"
     if [[ "$lvar" == 0 ]]; then
 	echo "$2=0" >> "$3"
 	return 0
