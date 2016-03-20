@@ -37,9 +37,14 @@ function make {
     lout="$ltmp.prgrs"
     touch "$lout"
 
+    cd "$ldir"
+    if [[ "$(pwd)" != "$lcwd" ]]; then
+	echo "--- Entering directory '$ldir'"
+    fi
     for cvar in $ltargets; do
         lvar="$cvar"
         cd "$ldir"
+	
         make_target "$ltmp" "$lvar" "$lout"
         exitcode="$?"
         cd "$lcwd"
@@ -47,6 +52,11 @@ function make {
             return "$exitcode"
         fi
     done
+    cd "$ldir"
+    if [[ "$(pwd)" != "$lcwd" ]]; then
+	echo "--- Exiting directory '$ldir'"
+        cd "$lcwd"
+    fi
 }
 
 function make_target {
@@ -109,6 +119,7 @@ function make_target {
     echo '#!/bin/bash' > "$3.target"
     lvar="$(tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#]+' | grep -o '[^'$'\t''].*')"
     if [[ "$lvar" != "" ]]; then
+	printf "%s" "$lvar" > "$3.targeted"
 	printf "%s" "$lvar" | xargs -I '{}' printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' '{}' >> "$3.target"
 	lvar="$(pwd)"
 	make_run "$3.target"
