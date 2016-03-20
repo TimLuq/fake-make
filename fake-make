@@ -117,6 +117,7 @@ function make_target {
 	lvar="$(grep -n "^$lvar" "$1" | head -n 1 | cut -d : -f 1)"
     fi
     lvar=$(($lvar - $lm - 1))
+    echo "--- target '$2' (line $lm) consists of $lvar action lines"
     if [[ "$lvar" == 0 ]]; then
 	echo "$2=0" >> "$3"
 	return 0
