@@ -30,7 +30,7 @@ function make {
     ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum).$$"
     grep -v "^[A-Z]+=" "$lmakefile" > "$ltmp"
     grep "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/' | xargs -t -I '{}' sed -i '{}' "$ltmp"
-    sed -i 's/$(MAKE)/make'
+    sed -i 's/$(MAKE)/make/' "$ltmp"
     lout="$ltmp.prgrs"
 
     for cvar in $ltargets; do
@@ -55,7 +55,7 @@ function make_target {
 	else
 	    echo "!!! Target '$2' has already failed."
 	fi
-	case $lm in
+	case "$lm" in
 	    circular)
 		echo "!!! Target '$2' is part of circular dependencies."
 		lm=3
@@ -102,8 +102,8 @@ function make_target {
     fi
     #echo "$lvar"
     echo '#!/bin/bash' > "$3.target"
-    lvar="$(pwd)"
     tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#]+' | grep -o '[^'$'\t''].*' | xargs printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' >> "$3.target"
+    lvar="$(pwd)"
     make_run "$3.target"
     cd "$lvar"
 }
