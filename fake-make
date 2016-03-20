@@ -27,11 +27,11 @@ function make {
         echo "!!! Makefile not found in '$defdir'"
         return 1
     fi
-    ltmp="$(tempnam).fm.$$"
+    ltmp="/tmp/fmake_$(echo "${lcwd}_:_${ldir}_:_${ltargets}" | md5sum).$$"
     grep -v -P "^[A-Z]+=" "$lmakefile" > "$ltmp"
     grep -P "^[A-Z]+=" "$lmakefile" | tac | sed 's/^\([A-Z][A-Z]*\)=\(.*\)/s\/$(\1)\/\2/' | xargs -t -I '{}' sed -i '{}' "$ltmp"
-    sed -i 's/$(MAKE)/make'
-    lout="$(tempnam).fm.$$"
+    sed -i 's/$(MAKE)/make' "$ltmp"
+    lout="$ltmp.prgrs"
 
     for cvar in $ltargets; do
         lvar="$cvar"
@@ -85,7 +85,7 @@ function make_target {
     if [[ "$lm" != "" ]]; then
 	echo "--- targeting dependencies: $lm"
         for cvar in $lm; do
-	    make_target "$1" "$cvar" "$3"
+	    make_target "$1" "$cvar" "$2"
 	done
     fi
 
@@ -102,7 +102,6 @@ function make_target {
     fi
     #echo "$lvar"
     echo '#!/bin/bash' > "$3.target"
-    echo "# target=$2" >> "$3.target"
     lvar="$(pwd)"
     tail -n "+$lm" "$1" | head -n "$lvar" | grep -P -o '^\s+([^#]+)' | grep -P -o '[^\s].*' | xargs printf '( %s );\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' >> "$3.target"
     make_run "$3.target"
