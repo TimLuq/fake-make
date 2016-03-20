@@ -46,7 +46,6 @@ function make {
     fi
     for cvar in $ltargets; do
         lvar="$cvar"
-        cd "$ldir"
 	
         make_target "$ltmp" "$lvar" "$lout"
         exitcode="$?"
@@ -54,8 +53,8 @@ function make {
         if [[ "$exitcode" != 0 ]]; then
             return "$exitcode"
         fi
+        cd "$ldir"
     done
-    cd "$ldir"
     if [[ "$(pwd)" != "$lcwd" ]]; then
 	echo "--- Exiting directory '$ldir'"
         cd "$lcwd"
