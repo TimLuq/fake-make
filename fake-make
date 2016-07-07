@@ -126,9 +126,9 @@ function make_target {
     #echo "$lvar"
     lvar="$(tail -n "+$lm" "$1" | head -n "$lvar" | grep -o '^'$'\t''[^#][^#]*' | grep -o '[^'$'\t''].*')"
     if [[ "$lvar" != "" ]]; then
-	printf "%s" "$lvar" > "$3.targeted"
+	printf "printf \"%s\"" "$lvar" > "$3.targeted"
 	echo  '#!/bin/bash' > "$3.target"
-	printf "%s" "$lvar" | xargs -I '{}' printf 'echo "%s"\n( %s )\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' '{}' '{}' >> "$3.target"
+	printf "%s" "$lvar" | sed 's/\$(\([^)]\))/${\1}/' | xargs -I '{}' printf 'echo "%s"\n( %s )\nretval=$?\nif [[ "$retval" != "0" ]]; then\n  return "$retval"\nfi\n' '{}' '{}' >> "$3.target"
 	lvar="$(pwd)"
 	make_run "$3.target"
 	retval=$?
